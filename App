@@ -1,0 +1,68 @@
+import datetime
+import hashlib
+
+class Account:
+    def __init__(self, acct_num, starting_balance=0):
+        self.acct_num = acct_num
+        self.balance = starting_balance
+        self.txn_history = []  # Keep track of all the things we do with the money
+
+    def put_money_in(self, amount):
+        if amount > 0:  # Can't deposit negative money, right?
+            self.balance += amount
+            self.txn_history.append((datetime.datetime.now(), "Deposit", amount))
+            print(f"Deposited {amount}. New balance: {self.balance}")
+        else:
+            print("Nope, can't deposit that.")
+
+    def take_money_out(self, amount):
+        if 0 < amount <= self.balance:  # Make sure we have enough money
+            self.balance -= amount
+            self.txn_history.append((datetime.datetime.now(), "Withdrawal", amount))
+            print(f"Withdrew {amount}. New balance: {self.balance}")
+        else:
+            print("Not enough money or something's wrong with the amount.")
+
+    def move_money_to(self, other_acct, amount):
+        if 0 < amount <= self.balance:
+            self.balance -= amount
+            other_acct.balance += amount
+            self.txn_history.append((datetime.datetime.now(), "Transfer to", amount, other_acct.acct_num))
+            other_acct.txn_history.append((datetime.datetime.now(), "Transfer from", amount, self.acct_num))
+            print(f"Transferred {amount} to account {other_acct.acct_num}. New balance: {self.balance}")
+        else:
+            print("Can't transfer that much, not enough money or invalid amount.")
+
+    def check_balance(self):
+        return self.balance
+
+    def get_history(self):
+        return self.txn_history
+
+class SimpleBank:
+    def __init__(self):
+        self.accounts = {}  # All the accounts we're managing
+
+    def open_new_account(self, starting_balance=0):
+        # Generate a somewhat unique account number (not super secure, but good enough for now)
+        acct_num = hashlib.sha256(str(datetime.datetime.now()).encode()).hexdigest()[:10]
+        new_acct = Account(acct_num, starting_balance)
+        self.accounts[acct_num] = new_acct
+        print(f"New account opened with number: {acct_num}")
+
+    def find_account(self, acct_num):
+        return self.accounts.get(acct_num)  # Might return None if account doesn't exist
+
+# Let's try it out
+bank = SimpleBank()
+bank.open_new_account(1000)  # Start with some money
+my_acct = bank.find_account("...")  # Replace "..." with the actual account number
+my_acct.put_money_in(500)
+my_acct.take_money_out(200)
+
+bank.open_new_account()  # Another account, no initial money
+other_acct = bank.find_account("...")
+my_acct.move_money_to(other_acct, 300)
+
+print(my_acct.check_balance())
+print(my_acct.get_history())
